@@ -3,24 +3,30 @@
 
 #define EMPTY 0
 
+struct Packet {
+    char data[19];
+    int length;
+};
 
 //28
 static char *Table = EMPTY;
 static int tIndex = 0;
 
-char * compressPacket(char data[], int TableSize, char *Table) {
+struct Packet compressPacket(char data[], int TableSize, char *Table) {
     if (Table == EMPTY) {
-        Table = calloc(TableSize);
+        Table = calloc(TableSize, 1);
     }
-    char *out = calloc(8);
+    char *out = calloc(16, 1);
+    char boolean[2] = {0};
+    char tr = 1; //boolean "true" value
     static int place = 0;
     int i;
-    for (i = 0; i < 8; i++) {
-        //Searching the Compression table for the matching, key value pair. 
-        //Continues until it has found a matching pair. 
+    for (i = 0; i < 16; i++) {
+        //Searching the Compression table for the matching, key value pair.
+        //Continues until it has found a matching pair.
         char index = 0;
         while(index < TableSize && Table[index] != data[i]){
-            index++; 
+            index++;
         }
         //We have got the last index so the table does not contain a key, value pair for the packet.
         if (index == TableSize) {
@@ -34,11 +40,11 @@ char * compressPacket(char data[], int TableSize, char *Table) {
                 mask = mask << (j * 2);
                 char partial = data[i] & mask;
                 partial = partial >> (j * 2);
-                
-                //TODO: update shifting. 
-                int shift = (31 - place) % 4;
+
+                //TODO: update shifting.
+                int shift = (63 - place) % 4;
                 char x = partial << shift * 2;
-                
+
                 char *byteout;
                 int offset = place / 4;
                 byteout = (out + offset);
@@ -46,9 +52,10 @@ char * compressPacket(char data[], int TableSize, char *Table) {
                 place++;
             }
         } else {
+            boolean[i / 8] = boolean[i / 8] | (tr << (7 - (i % 8)));
             printf("compressed ");
-            //TODO: This about the math from calculating placement. 
-            int shift = (31 - place) % 4;
+            //TODO: This about the math from calculating placement.
+            int shift = (63 - place) % 4;
             char x = index << shift * 2;
             char *byteout;
             int offset = place / 4;
@@ -57,7 +64,17 @@ char * compressPacket(char data[], int TableSize, char *Table) {
             place++;
         }
     }
-    return out;
+    char count = ((place-1) / 4) + 2;
+    struct Packet packet;
+    packet.length = (count + 3);
+    packet.data[0] = (count + 2);
+    packet.data[1] = boolean[0];
+    packet.data[2] = boolean[1];
+    char k;
+    for (k = 1; k <= count; k++) {
+        packet.data[k + 2] = *(out + k - 1);
+    }
+    return packet;
 }
 
 
@@ -65,20 +82,22 @@ char * compressPacket(char data[], int TableSize, char *Table) {
 
 int main(void)
 {
-    char data[8] = {2, 3, 12, 3, 17, 2, 3, 2};
+    //char data[8] = {2, 3, 12, 3, 17, 2, 3, 2};
+    char data[16] = {2, 3, 12, 3, 17, 2, 3, 2, 2, 3, 12, 3, 17, 2, 3, 2};
 
-    char *packet;
-    packet = compressPacket(data, 3, Table);
-    int i;
+    struct Packet packet;
+    packet = compressPacket(data, 5, Table);
     printf("\n");
-    for (i = 0; i < 8; i++) {
+    int i;
+    for (i = 0; i < packet.length; i++) {
         int j;
         for (j = 7; j >= 0; j--) {
             char a = 1;
             a = a << j;
-            char out = packet[i];
+            char out = packet.data[i];
             out = out & a;
             out = out >> j;
+            out = out & 1;
             printf("%d ", out);
         }
         printf("\n");
