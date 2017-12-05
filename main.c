@@ -1,4 +1,3 @@
-
 #include <msp430.h>
 #define RedLed BIT0
 #define GreenLed BIT7
@@ -18,8 +17,9 @@ struct Packet {
 
 //28
 static char *Table = EMPTY;
-struct Packet compressPacket(char data[], int TableSize) {
+static unsigned int tIndex = 0;
 
+struct Packet compressPacket(char data[], int TableSize) {
     if (Table == EMPTY) {
         Table = calloc(TableSize, 1);
     }
@@ -28,7 +28,6 @@ struct Packet compressPacket(char data[], int TableSize) {
     const char tr = 1; //boolean "true" value
     int place = 0;
     unsigned int i;
-
     for (i = 0; i < 16; i++) {
         //Searching the Compression table for the matching, key value pair.
         //Continues until it has found a matching pair.
@@ -82,7 +81,6 @@ struct Packet compressPacket(char data[], int TableSize) {
         packet.data[k + 2] = *(out + k - 1);
     }
     free(out);
-
     return packet;
 }
 
@@ -115,13 +113,11 @@ void main(void)
     struct Packet packet;
 
     while (1) {
-
         int i;
         for (i = 0; i < 16; i++) {
             //data[i] = rand() % (12 + 1);
         }
         packet = compressPacket(data, 4);
-
 
         transmit(packet.data, packet.length);
 
@@ -130,7 +126,6 @@ void main(void)
         RXByteCtr = 0;
 
     }                         //Reset Receive Byte counter
-
 }
 
 //USCI A receiver interrupt
@@ -153,7 +148,6 @@ void __attribute__ ((interrupt(USCI_A0_VECTOR))) USCI_A0_ISR (void)
         //input[RXByteCtr-1] = 0;
     //}   //Add null character at the end of input string (on the /r)
 }
-
 void transmit(const char *str, int size) {
     int count = size;
     while (count != 0) { //Do this during current element is not
@@ -172,4 +166,3 @@ int max(int a, int b) {
     else
         return b;
 } // Find the max between two numbers.
-
