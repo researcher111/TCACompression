@@ -18,17 +18,17 @@ struct Packet {
 
 //28
 static char *Table = EMPTY;
-static int tIndex = 0;
+struct Packet compressPacket(char data[], int TableSize) {
 
-struct Packet compressPacket(char data[], int TableSize, char *Table) {
     if (Table == EMPTY) {
         Table = calloc(TableSize, 1);
     }
     char *out = calloc(16, 1);
     char boolean[2] = {0};
-    char tr = 1; //boolean "true" value
-    static int place = 0;
-    int i;
+    const char tr = 1; //boolean "true" value
+    int place = 0;
+    unsigned int i;
+
     for (i = 0; i < 16; i++) {
         //Searching the Compression table for the matching, key value pair.
         //Continues until it has found a matching pair.
@@ -78,9 +78,11 @@ struct Packet compressPacket(char data[], int TableSize, char *Table) {
     packet.data[1] = boolean[0];
     packet.data[2] = boolean[1];
     char k;
-    for (k = 1; k <= count; k++) {
+    for (k = count; k > 0; k--) {
         packet.data[k + 2] = *(out + k - 1);
     }
+    free(out);
+
     return packet;
 }
 
@@ -113,7 +115,13 @@ void main(void)
     struct Packet packet;
 
     while (1) {
-        packet = compressPacket(data, 5, Table);
+
+        int i;
+        for (i = 0; i < 16; i++) {
+            //data[i] = rand() % (12 + 1);
+        }
+        packet = compressPacket(data, 4);
+
 
         transmit(packet.data, packet.length);
 
@@ -122,6 +130,7 @@ void main(void)
         RXByteCtr = 0;
 
     }                         //Reset Receive Byte counter
+
 }
 
 //USCI A receiver interrupt
@@ -136,14 +145,15 @@ void __attribute__ ((interrupt(USCI_A0_VECTOR))) USCI_A0_ISR (void)
 #endif
 {   //Check if the UCA0RXBUF is different from 0x0A
 //(Enter key from keyboard)
-    if(UCA0RXBUF != 0x0A) input[RXByteCtr++] = UCA0RXBUF;
+    //if(UCA0RXBUF != 0x0A) input[RXByteCtr++] = UCA0RXBUF;
 //If it is, load received character
 //to current input string element
-    else {cnt = 1;
+    //else {cnt = 1;
         //If it is not, set cnt
-        input[RXByteCtr-1] = 0;
-    }   //Add null character at the end of input string (on the /r)
+        //input[RXByteCtr-1] = 0;
+    //}   //Add null character at the end of input string (on the /r)
 }
+
 void transmit(const char *str, int size) {
     int count = size;
     while (count != 0) { //Do this during current element is not
@@ -162,5 +172,4 @@ int max(int a, int b) {
     else
         return b;
 } // Find the max between two numbers.
-
 
