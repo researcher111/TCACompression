@@ -70,7 +70,7 @@ struct Packet compressPacket(char data[], int TableSize) {
             place++;
         }
     }
-    char count = ((place-1) / 4) + 2;
+    char count = ((place-1) / 4) + 1;
     struct Packet packet;
     packet.length = (count + 3);
     packet.data[0] = (count + 2);
